@@ -4,45 +4,46 @@ import time
 
 
 class HandDetector:
+    """
+    Detects hands in input image using pretrained hands module from mediapipe.
+    Marks hand with 21 points.
+    """
     def __init__(self, mode=False, max_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5):
 
-        # Define pretrained hands object
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(mode,
                                         max_hands,
                                         min_detection_confidence,
                                         min_tracking_confidence)
 
-        # Draw points object
-        self.mpDraw = mp.solutions.drawing_utils
+        self.mpDraw = mp.solutions.drawing_utils  # Draw points object
         self.results = None
 
     def find_hands(self, img, draw=True):
         """
         Args:
-            img:
+            img:  Image
             draw: Draws red hand landmark points and greed line connections between points
         """
 
-        # Load image to hands object
+        # Load image to pretrained hands object
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.hands.process(imgRGB)
 
         # Extract information from results object
-        if self.results.multi_hand_landmarks:  # if detects look up object
+        if self.results.multi_hand_landmarks:
 
             for handLms in self.results.multi_hand_landmarks:
-
-                # Display handLms in original image -> img
                 if draw:
+                    # Display handLms in original image -> img
                     self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS)
         return img
 
     def find_position(self, img, hand_number=0, draw=True):
         """
         Args:
-            img:
-            hand_number:
+            img: Image
+            hand_number: Specified hand to find landmark point positions
             draw: Draws purple hand landmark points
         """
 
@@ -55,8 +56,10 @@ class HandDetector:
             my_hand = self.results.multi_hand_landmarks[hand_number]
 
             for idx, landmark in enumerate(my_hand.landmark):
-                # landmark values are decimal places which is ratio of an image and not pixels
-                # we need to multiply it with h, w of the image to get the pixel value
+                """
+                Landmark values are in decimal places which is in form of a ratio of an image and not pixels.
+                Need to multiply it by height and width of the image to get the pixel value.
+                """
                 h, w, c = img.shape
                 cx, cy = int(landmark.x * w), int(landmark.y * h)
                 lm_list.append([idx, cx, cy])
