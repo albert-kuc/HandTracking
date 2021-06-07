@@ -24,6 +24,20 @@ volume = cast(interface, POINTER(IAudioEndpointVolume))
 volume_range = volume.GetVolumeRange()
 min_vol = volume_range[0]
 max_vol = volume_range[1]
+print(f'Speaker volume range: {min_vol},{max_vol}')
+
+
+def log_calculation(x):
+    """ Equation to convert 0-100 volume percentage to logarithmic scale """
+    if min_vol == -96.0:
+        return 14.7 * np.log(x + 0.15) - 67.816    # for -96.0 - 0.0 range (min_vol-max_vol)
+    return 14.7 * np.log(x + 1.195) - 67.816   # for -65.25 - 0.0 range
+
+
+log_calculation_0 = log_calculation(0)
+log_calculation_100 = log_calculation(100)
+# print(f'log_0:   {log_calculation_0}')
+# print(f'log_100: {log_calculation_100}')
 
 
 while True:
@@ -60,9 +74,21 @@ while True:
 
         # Convert points distance to volume range and adjust volume
         # Hand range 20-200 -> Volume range -96.0 - 0.0
-        vol = np.interp(length, [20, 200], [min_vol, max_vol])
+        # vol = np.interp(length, [20, 200], [min_vol, max_vol])
 
-        volume.SetMasterVolumeLevel(int(vol), None)
+        # Hand range 20-200 -> vol percentage range 0-100
+        length_percentage = np.interp(length, [20, 200], [0, 100])
+
+        # Length percentage range -> Vol logarithmic range
+        vol_log_ = log_calculation(length_percentage)
+
+        # Error correction in vol logarithmic range
+        vol_log = np.interp(vol_log_, [log_calculation_0, log_calculation_100], [min_vol, max_vol])
+
+        # Volume percentage
+        vol_percentage = np.interp(vol_log, [min_vol, max_vol], [0, 100])
+
+        volume.SetMasterVolumeLevel(int(vol_log), None)
 
     # Calculate ftp and display in image
     current_time = time.time()
